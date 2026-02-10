@@ -55,7 +55,6 @@ def get_opportunities():
         print(f"Ocorreu um erro inesperado: {e}")
 
 
-#%%
 
 get_opportunities()
 

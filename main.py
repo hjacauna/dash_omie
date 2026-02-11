@@ -46,7 +46,21 @@ def get_opportunities():
 
         df = pd.DataFrame(data["cadastros"])
 
-        return df.head()  # Exibe as primeiras linhas do DataFrame
+        df_filtro = df[["identificacao","fasesStatus", "previsaoTemp","ticket"]]
+        df_filtro["nCodVendedor"] = df_filtro["identificacao"].str["nCodVendedor"]
+        df_filtro["nCodConta"] = df_filtro["identificacao"].str["nCodConta"]
+        df_filtro["cDesOp"] = df_filtro["identificacao"].str["cDesOp"]
+        df_filtro["nCodStatus"] = df_filtro["fasesStatus"].str["nCodStatus"]
+        df_filtro["nAnoPrev"] = df_filtro["previsaoTemp"].str["nAnoPrev"]
+        df_filtro["nMesPrev"] = df_filtro["previsaoTemp"].str["nMesPrev"]
+        df_filtro["ticket Meses"] = df_filtro["ticket"].str["nMeses"]
+        df_filtro["ticket Produtos"] = df_filtro["ticket"].str["nProdutos"]
+        df_filtro["ticket Recorrencia"] = df_filtro["ticket"].str["nRecorrencia"]
+        df_filtro["ticket Servico"] = df_filtro["ticket"].str["nServicos"]
+
+        df_filtro_oportunidade = df_filtro[["nCodVendedor", "nCodConta", "cDesOp", "nCodStatus", "nAnoPrev", "nMesPrev", "ticket Meses", "ticket Produtos", "ticket Recorrencia", "ticket Servico"]]
+
+        return df_filtro_oportunidade.head()  # Exibe as primeiras linhas do DataFrame
 
     except requests.exceptions.HTTPError as err:
         print(f"Erro na API: {err}")
@@ -55,7 +69,6 @@ def get_opportunities():
         print(f"Ocorreu um erro inesperado: {e}")
 
 
-#%%
 
 get_opportunities()
 

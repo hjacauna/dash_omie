@@ -90,6 +90,11 @@ def get_opportunities():
 
         df_out['ticket Produtos'] = df_out['ticket Produtos'].astype(float)
         df_out['ticket Meses'] = df_out['ticket Meses'].astype(float)
+        df_out["dtAlteracao"] = pd.to_datetime(
+                df_out["dtAlteracao"],
+                dayfirst=True,
+                errors="coerce"
+            )
 
         return df_out
 
@@ -297,3 +302,13 @@ df_oportunities_final = df_oportunities[['NomeConta','CNPJ/CPF','cNomeUsuario','
 #%%
 df_oportunities_final
 
+quantidade_oportunidades = len(df_oportunities_final)
+
+valores_tickets = df_oportunities_final[['ticket Servico','ticket Recorrencia','ticket Produtos','ticket Meses']].describe().round(2)
+
+# Criação coluna inatividade oportunidades
+hoje = pd.Timestamp.now().normalize()
+
+df_oportunities_final["dias_inatividade"] = (hoje - df_oportunities_final["dtAlteracao"]).dt.days
+
+df_oportunities_final

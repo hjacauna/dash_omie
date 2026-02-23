@@ -4,7 +4,6 @@ import requests
 import streamlit as st
 import requests
 import json
-import time
 
 st.set_page_config(page_title="CRM - Oportunidades", layout="wide")
 
@@ -89,6 +88,14 @@ def get_opportunities():
               .reindex(columns=list(col_map.values()))
         )
 
+        df_out['ticket Produtos'] = df_out['ticket Produtos'].astype(float)
+        df_out['ticket Meses'] = df_out['ticket Meses'].astype(float)
+        df_out["dtAlteracao"] = pd.to_datetime(
+                df_out["dtAlteracao"],
+                dayfirst=True,
+                errors="coerce"
+            )
+
         return df_out
 
     except requests.exceptions.HTTPError as err:
@@ -140,7 +147,7 @@ def get_fases():
 
         col_map = {
             "nCodigo": "nCodFase",
-            "cDescrUsuario": "cDescrUsuario"
+            "cDescrUsuario": "cDescFase"
         }
 
         df_out = (
@@ -290,5 +297,18 @@ df_oportunities = df_oportunities.merge(df_contas, on="nCodConta", how="left")
 
 df_oportunities
 
+df_oportunities_final = df_oportunities[['NomeConta','CNPJ/CPF','cNomeUsuario','dtAlteracao','cDescFase','ticket Servico','ticket Recorrencia','ticket Produtos','ticket Meses','cDesOp']].copy()
 
+#%%
+df_oportunities_final
 
+quantidade_oportunidades = len(df_oportunities_final)
+
+valores_tickets = df_oportunities_final[['ticket Servico','ticket Recorrencia','ticket Produtos','ticket Meses']].describe().round(2)
+
+# Criação coluna inatividade oportunidades
+hoje = pd.Timestamp.now().normalize()
+
+df_oportunities_final["dias_inatividade"] = (hoje - df_oportunities_final["dtAlteracao"]).dt.days
+
+df_oportunities_final

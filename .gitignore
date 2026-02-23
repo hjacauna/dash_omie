@@ -1,2 +1,3 @@
 # Ignorar segredos do Streamlit
 *.toml
+*.csv

@@ -1,71 +1,103 @@
-# Dashboard CRM Omie
+# CRM | Dashboard Gerencial (Omie)
 
-Projeto em desenvolvimento para construção de um dashboard com dados do CRM da Omie.
+Dashboard em **Streamlit** para acompanhamento gerencial de oportunidades ativas do CRM da Omie.
 
-## Objetivo
+## Status atual do projeto
 
-Entregar um dashboard simples, confiável e evolutivo para acompanhamento de oportunidades comerciais no CRM da Omie, permitindo:
+O projeto está em um **MVP funcional** (não apenas estrutura inicial). Hoje a aplicação já:
 
-- Visualizar pipeline de vendas por fase.
-- Acompanhar oportunidades por vendedor e conta.
-- Monitorar previsões (ano/mês) e composição de ticket.
-- Apoiar decisões comerciais com dados atualizados da API Omie.
-
-## Fase atual do projeto
-
-No estágio atual, o projeto está em **MVP técnico inicial**, com foco em integração e estruturação de dados:
-
-- Aplicação base em **Streamlit**.
-- Consumo da API Omie para:
+- Integra com 4 endpoints da API Omie CRM:
   - `ListarOportunidades`
-  - `ListarFases` (função implementada e pronta para uso).
-- Transformação inicial dos dados retornados para um formato tabular com **pandas**.
-- Extração de campos relevantes de oportunidades, incluindo:
-  - vendedor (`nCodVendedor`)
-  - conta (`nCodConta`)
-  - descrição da oportunidade (`cDesOp`)
-  - status/fase (`nCodStatus`)
-  - previsão (`nAnoPrev`, `nMesPrev`)
-  - informações de ticket (meses, produtos, recorrência e serviços)
+  - `ListarFases`
+  - `ListarUsuarios`
+  - `ListarContas`
+- Faz paginação automática para oportunidades e contas.
+- Consolida os dados em um dataset único com `pandas`.
+- Calcula indicadores derivados, como:
+  - `dias_inatividade`
+  - `ticket_total`
+- Exibe visão gerencial com:
+  - KPIs principais
+  - gráficos por fase, vendedor e inatividade
+  - tabela de oportunidades críticas
+- Permite filtros globais por:
+  - período (`dtAlteracao`)
+  - vendedor
+  - fase
+  - faixa de inatividade
+  - busca textual por conta/oportunidade
+- Permite exportar **CSV filtrado** e recarregar os dados limpando cache.
 
-## Tecnologias
+## Stack
 
-- Python
+- Python 3
 - Streamlit
 - pandas
 - requests
 
-## Estrutura atual
+## Estrutura do repositório
 
-- `main.py`: integração com API Omie, tratamento inicial dos dados e execução da coleta de oportunidades.
+- `main.py`: aplicação completa (coleta da API, transformação, métricas, filtros e interface).
+- `README.md`: documentação do projeto.
 
-## Como executar
+## Como executar localmente
 
-1. Instale as dependências (exemplo):
+### 1) Instale dependências
 
-   ```bash
-   pip install streamlit pandas requests
-   ```
+```bash
+pip install streamlit pandas requests
+```
 
-2. Configure as credenciais da Omie no `st.secrets` (por exemplo, em `.streamlit/secrets.toml`):
+### 2) Configure credenciais da Omie
 
-   ```toml
-   app_key = "SUA_APP_KEY"
-   app_secret = "SUA_APP_SECRET"
-   ```
+Crie o arquivo `.streamlit/secrets.toml`:
 
-3. Execute a aplicação:
+```toml
+app_key = "SUA_APP_KEY"
+app_secret = "SUA_APP_SECRET"
+```
 
-   ```bash
-   streamlit run main.py
-   ```
+### 3) Rode o dashboard
 
-## Próximos passos sugeridos
+```bash
+streamlit run main.py
+```
 
-- Construir visualizações do funil por fase.
-- Criar KPIs (volume de oportunidades, ticket médio, previsão por período).
-- Adicionar filtros por vendedor, período e status.
-- Melhorar tratamento de erros e logging das chamadas API.
-- Organizar código em camadas (coleta, transformação, visualização).
-- Incluir testes e validações de qualidade dos dados.
+## Como o app está organizado
 
+### Camada de coleta (com cache)
+
+As funções abaixo usam `@st.cache_data` para reduzir chamadas repetidas à API:
+
+- `get_opportunities()`
+- `get_fases()`
+- `get_usuario()`
+- `get_contas()`
+- `build_dataset()`
+
+### Camada de transformação
+
+- Normalização de JSON com `pd.json_normalize`.
+- Renomeação e seleção de colunas relevantes.
+- Conversão de tipos numéricos e datas.
+- Enriquecimento por `merge` entre oportunidades, fases, usuários e contas.
+
+### Camada de visualização
+
+- **Sidebar** com filtros globais.
+- **Tab "Visão Geral"** com KPIs, gráficos e lista de oportunidades críticas.
+- **Tab "Base"** com seleção dinâmica de colunas e tabela detalhada.
+
+## Limitações conhecidas
+
+- Não há suíte de testes automatizados no repositório neste momento.
+- O projeto está em arquivo único (`main.py`), ainda sem modularização por camadas/pacotes.
+- Dependência direta de credenciais válidas da API Omie para execução completa.
+
+## Próximos passos recomendados
+
+- Modularizar código em pacotes (`api/`, `services/`, `ui/`).
+- Adicionar tratamento de erros por endpoint com mensagens amigáveis na UI.
+- Criar testes unitários para transformação de dados e métricas.
+- Incluir visualizações adicionais (ex.: evolução temporal de ticket e volume).
+- Configurar lint/format e CI (ex.: `ruff`, `black`, GitHub Actions).

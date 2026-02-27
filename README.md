@@ -1,71 +1,107 @@
-# Dashboard CRM Omie
+# CRM | Dashboard Gerencial (Omie)
 
-Projeto em desenvolvimento para construção de um dashboard com dados do CRM da Omie.
+Aplicação em **Streamlit** para monitorar oportunidades ativas do CRM da Omie com visão gerencial, filtros globais e exportação de dados.
 
-## Objetivo
+## Situação atual do projeto
 
-Entregar um dashboard simples, confiável e evolutivo para acompanhamento de oportunidades comerciais no CRM da Omie, permitindo:
+O projeto está em produção técnica no formato de **MVP funcional em arquivo único** (`main.py`).
 
-- Visualizar pipeline de vendas por fase.
-- Acompanhar oportunidades por vendedor e conta.
-- Monitorar previsões (ano/mês) e composição de ticket.
-- Apoiar decisões comerciais com dados atualizados da API Omie.
+Hoje, o sistema já entrega:
 
-## Fase atual do projeto
+- Coleta de dados na API Omie CRM usando:
+  - `ListarOportunidades` (somente status `A`)
+  - `ListarFases`
+  - `ListarUsuarios`
+  - `ListarContas`
+- Paginação automática para oportunidades e contas.
+- Cache de dados com `st.cache_data` (TTL de 30 ou 60 minutos, conforme endpoint).
+- Enriquecimento dos dados por `merge` entre oportunidades, fases, usuários e contas.
+- Cálculo de métricas derivadas:
+  - `dias_inatividade`
+  - `ticket_total`
+- Interface de análise com:
+  - KPIs (volume, ticket total, ticket médio, inatividade média e % > 30 dias)
+  - gráfico de oportunidades por fase
+  - gráfico de ticket por vendedor (top 10)
+  - distribuição por faixas de inatividade
+  - tabela de oportunidades mais críticas
+- Filtros globais por período, vendedor, fase, inatividade e busca textual.
+- Exportação da base filtrada para CSV.
+- Botão para limpar cache e recarregar dados.
 
-No estágio atual, o projeto está em **MVP técnico inicial**, com foco em integração e estruturação de dados:
+## Stack atual
 
-- Aplicação base em **Streamlit**.
-- Consumo da API Omie para:
-  - `ListarOportunidades`
-  - `ListarFases` (função implementada e pronta para uso).
-- Transformação inicial dos dados retornados para um formato tabular com **pandas**.
-- Extração de campos relevantes de oportunidades, incluindo:
-  - vendedor (`nCodVendedor`)
-  - conta (`nCodConta`)
-  - descrição da oportunidade (`cDesOp`)
-  - status/fase (`nCodStatus`)
-  - previsão (`nAnoPrev`, `nMesPrev`)
-  - informações de ticket (meses, produtos, recorrência e serviços)
-
-## Tecnologias
-
-- Python
+- Python 3
 - Streamlit
 - pandas
 - requests
 
-## Estrutura atual
+## Estrutura do repositório
 
-- `main.py`: integração com API Omie, tratamento inicial dos dados e execução da coleta de oportunidades.
+- `main.py`: lógica completa da aplicação (API, transformação de dados e UI).
+- `README.md`: documentação do projeto.
 
-## Como executar
+## Como executar localmente
 
-1. Instale as dependências (exemplo):
+### 1) Instale as dependências
 
-   ```bash
-   pip install streamlit pandas requests
-   ```
+```bash
+pip install streamlit pandas requests
+```
 
-2. Configure as credenciais da Omie no `st.secrets` (por exemplo, em `.streamlit/secrets.toml`):
+### 2) Configure credenciais da Omie
 
-   ```toml
-   app_key = "SUA_APP_KEY"
-   app_secret = "SUA_APP_SECRET"
-   ```
+Crie `.streamlit/secrets.toml` com:
 
-3. Execute a aplicação:
+```toml
+app_key = "SUA_APP_KEY"
+app_secret = "SUA_APP_SECRET"
+```
 
-   ```bash
-   streamlit run main.py
-   ```
+### 3) Execute o app
 
-## Próximos passos sugeridos
+```bash
+streamlit run main.py
+```
 
-- Construir visualizações do funil por fase.
-- Criar KPIs (volume de oportunidades, ticket médio, previsão por período).
-- Adicionar filtros por vendedor, período e status.
-- Melhorar tratamento de erros e logging das chamadas API.
-- Organizar código em camadas (coleta, transformação, visualização).
-- Incluir testes e validações de qualidade dos dados.
+## Fluxo funcional implementado
 
+### 1. Coleta (API)
+
+Funções de coleta:
+
+- `get_opportunities()`
+- `get_fases()`
+- `get_usuario()`
+- `get_contas()`
+
+### 2. Consolidação e transformação
+
+A função `build_dataset()`:
+
+- junta as fontes por chaves de vendedor, fase e conta;
+- seleciona colunas úteis para o painel;
+- padroniza tipos (número/data);
+- cria `dias_inatividade` e `ticket_total`;
+- preenche ausências com rótulos padrão (`Sem vendedor`, `Sem fase`, `Sem conta`).
+
+### 3. Visualização e exploração
+
+- Sidebar com filtros globais.
+- Aba **Visão Geral** para KPIs e gráficos.
+- Aba **Base** para inspeção tabular com seleção de colunas.
+
+## Limitações atuais
+
+- Projeto ainda monolítico (sem separação em módulos/pacotes).
+- Sem suíte de testes automatizados versionada no repositório.
+- Sem camada formal de logging/observabilidade.
+- Dependência direta de credenciais válidas no `st.secrets`.
+
+## Próximas melhorias recomendadas
+
+- Modularizar em camadas (`clients`, `services`, `ui`).
+- Adicionar tratamento de erro por endpoint com mensagens mais detalhadas na interface.
+- Incluir testes unitários para transformação e métricas.
+- Padronizar qualidade de código com lint/format (`ruff`, `black`) + CI.
+- Evoluir visualizações com série temporal e comparação por períodos.

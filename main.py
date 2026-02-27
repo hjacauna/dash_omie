@@ -223,7 +223,7 @@ def metric_row(df_view: pd.DataFrame):
     ticket_medio = float(df_view["ticket_total"].mean(skipna=True) or 0)
     inat_media = float(df_view["dias_inatividade"].mean(skipna=True) or 0)
     pct_criticas = (
-        (df_view["dias_inatividade"].fillna(-1) > 30).mean() * 100
+        (df_view["dias_inatividade"].fillna(-1) > 15).mean() * 100
         if total_ops > 0
         else 0
     )
@@ -233,7 +233,7 @@ def metric_row(df_view: pd.DataFrame):
     c2.metric("Ticket total", brl(ticket_total))
     c3.metric("Ticket médio", brl(ticket_medio))
     c4.metric("Inatividade média", f"{inat_media:.1f} dias")
-    c5.metric("% > 30 dias", f"{pct_criticas:.1f}%")
+    c5.metric("% > 15 dias", f"{pct_criticas:.1f}%")
 
 # ----------------------------
 # Carrega dataset
@@ -324,8 +324,8 @@ st.markdown("---")
 # ----------------------------
 # Tabs
 # ----------------------------
-tab1, tab5 = st.tabs(
-    ["Visão Geral", "Base"]
+tab1,tab2,tab3,tab4,tab5 = st.tabs(
+    ["Visão Geral","Vendedores", "Fases", "Contas", "Base"]
 )
 
 # ----------------------------
@@ -366,8 +366,19 @@ with tab1:
         st.bar_chart(dist)
 
     with cD:
-        st.subheader("Oportunidades críticas (mais paradas)")
-        crit = (
+        st.subheader("Ticket total por fase (Top 20)")
+        vend = (
+            df_filt.groupby("cDescFase")["ticket_total"]
+            .sum()
+            .sort_values(ascending=False)
+            .head(20)
+            .reset_index()
+        )
+        st.bar_chart(vend.set_index("cDescFase")["ticket_total"])
+
+
+    st.subheader("Oportunidades críticas (mais paradas)")
+    crit = (
             df_filt.sort_values("dias_inatividade", ascending=False)
             .head(15)[
                 [
@@ -381,7 +392,167 @@ with tab1:
             ]
             .copy()
         )
-        st.dataframe(crit, use_container_width=True, hide_index=True)
+    st.dataframe(crit, use_container_width=True, hide_index=True)
+
+
+
+# ----------------------------
+# Tab 2: Vendedores
+# ----------------------------
+with tab2:
+    st.subheader("Análise por vendedor")
+
+    vendedores_tab =["Todos"] + sorted(df_filt["cNomeUsuario"].dropna().unique().tolist())
+    sel_vend_tab = st.selectbox(
+        "Selecione um vendedor",
+        options=vendedores_tab if vendedores_tab else ["Sem dados"],
+        index=0,
+    )
+    if sel_vend_tab == "Todos":
+        df_v = df_filt.copy()
+    else:
+        df_v = df_filt[df_filt["cNomeUsuario"] == sel_vend_tab].copy()
+
+    metric_row(df_v)
+
+    c1, c2 = st.columns((1, 1))
+    with c1:
+        st.subheader("Funil: oportunidades por fase (do vendedor)")
+        funil = (
+            df_v["cDescFase"]
+            .value_counts()
+            .rename_axis("Fase")
+            .reset_index(name="Oportunidades")
+        )
+        st.bar_chart(funil.set_index("Fase")["Oportunidades"])
+
+    with c2:
+        st.subheader("Top contas por ticket (vendedor)")
+        top_contas_v = (
+            df_v.groupby("NomeConta")["ticket_total"]
+            .sum()
+            .sort_values(ascending=False)
+            .head(10)
+            .reset_index()
+        )
+        st.bar_chart(top_contas_v.set_index("NomeConta")["ticket_total"])
+
+    st.subheader("Críticas do vendedor (mais paradas)")
+    crit_v = (
+        df_v.sort_values(["dias_inatividade", "ticket_total"], ascending=[False, False])
+        .head(20)[
+            [
+                "NomeConta",
+                "cDescFase",
+                "dtAlteracao",
+                "dias_inatividade",
+                "ticket_total",
+                "cDesOp",
+            ]
+        ]
+        .copy()
+    )
+    st.dataframe(crit_v, use_container_width=True, hide_index=True)
+
+
+# ----------------------------
+# Tab 3: Fases
+# ----------------------------
+with tab3:
+    st.subheader("Análise por fase")
+
+    fases_tab = sorted(df_filt["cDescFase"].dropna().unique().tolist())
+    sel_fase_tab = st.selectbox(
+        "Selecione uma fase",
+        options=fases_tab if fases_tab else ["Sem dados"],
+        index=0,
+    )
+
+    df_fase = df_filt[df_filt["cDescFase"] == sel_fase_tab].copy()
+
+    metric_row(df_fase)
+
+    c1, c2 = st.columns((1, 1))
+    with c1:
+        st.subheader("Ticket por vendedor (fase selecionada)")
+        vend_fase = (
+            df_fase.groupby("cNomeUsuario")["ticket_total"]
+            .sum()
+            .sort_values(ascending=False)
+            .head(15)
+            .reset_index()
+        )
+        st.bar_chart(vend_fase.set_index("cNomeUsuario")["ticket_total"])
+
+    with c2:
+        st.subheader("Distribuição de inatividade (fase)")
+        bins = [-1, 7, 14, 30, 60, 90, 10**9]
+        labels = ["0-7", "8-14", "15-30", "31-60", "61-90", "90+"]
+        faixa = pd.cut(df_fase["dias_inatividade"].fillna(-1), bins=bins, labels=labels)
+        dist = faixa.value_counts().reindex(labels).fillna(0).astype(int)
+        st.bar_chart(dist)
+
+    st.subheader("Oportunidades na fase (mais relevantes)")
+    top_fase = (
+        df_fase.sort_values(["ticket_total", "dias_inatividade"], ascending=[False, False])
+        .head(30)[
+            [
+                "NomeConta",
+                "cNomeUsuario",
+                "dtAlteracao",
+                "dias_inatividade",
+                "ticket_total",
+                "cDesOp",
+            ]
+        ]
+        .copy()
+    )
+    st.dataframe(top_fase, use_container_width=True, hide_index=True)
+
+# ----------------------------
+# Tab 4: Contas (Ranking)
+# ----------------------------
+with tab4:
+    st.subheader("Ranking de contas (gerencial)")
+
+    c1, c2 = st.columns((1, 1))
+    with c1:
+        st.markdown("### Top 20 contas por **Ticket total**")
+        top_ticket = (
+            df_filt.groupby("NomeConta")["ticket_total"]
+            .sum()
+            .sort_values(ascending=False)
+            .head(20)
+            .reset_index()
+        )
+        st.dataframe(top_ticket, use_container_width=True, hide_index=True)
+
+    with c2:
+        st.markdown("### Top 20 contas por **Inatividade máxima**")
+        top_inat = (
+            df_filt.groupby("NomeConta")["dias_inatividade"]
+            .max()
+            .sort_values(ascending=False)
+            .head(20)
+            .reset_index()
+        )
+        st.dataframe(top_inat, use_container_width=True, hide_index=True)
+
+    st.markdown("---")
+
+    st.markdown("### Detalhe por conta")
+    contas = sorted(df_filt["NomeConta"].dropna().unique().tolist())
+    sel_conta = st.selectbox("Selecione uma conta", options=contas if contas else ["Sem dados"], index=0)
+    df_conta = df_filt[df_filt["NomeConta"] == sel_conta].copy()
+
+    metric_row(df_conta)
+
+    st.subheader("Oportunidades da conta")
+    df_conta_view = df_conta.sort_values(["ticket_total", "dias_inatividade"], ascending=[False, False])[
+        ["cDesOp", "cNomeUsuario", "cDescFase", "dtAlteracao", "dias_inatividade", "ticket_total"]
+    ]
+    st.dataframe(df_conta_view, use_container_width=True, hide_index=True)
+
 
 
 # ----------------------------

@@ -324,7 +324,7 @@ st.markdown("---")
 # ----------------------------
 # Tabs
 # ----------------------------
-tab1,tab2,tab3,tab4, tab5 = st.tabs(
+tab1,tab2,tab3,tab4,tab5 = st.tabs(
     ["Visão Geral","Vendedores", "Fases", "Contas", "Base"]
 )
 

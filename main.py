@@ -71,13 +71,13 @@ def get_opportunities():
         "ticket.nProdutos": "ticket Produtos",
         "ticket.nRecorrencia": "ticket Recorrencia",
         "ticket.nServicos": "ticket Servico",
+        "ticket.nTicket": "ticket Total",
         "outrasInf.dAlteracao": "dtAlteracao",
     }
 
     df_out = df.rename(columns=col_map).reindex(columns=list(col_map.values()))
 
-    for c in ["ticket Produtos", "ticket Meses", "ticket Recorrencia", "ticket Servico"]:
-        df_out[c] = pd.to_numeric(df_out[c], errors="coerce")
+  
 
     df_out["dtAlteracao"] = pd.to_datetime(
         df_out["dtAlteracao"], dayfirst=True, errors="coerce"
@@ -187,10 +187,7 @@ def build_dataset():
             "cNomeUsuario",
             "dtAlteracao",
             "cDescFase",
-            "ticket Servico",
-            "ticket Recorrencia",
-            "ticket Produtos",
-            "ticket Meses",
+            "ticket Total",
             "cDesOp",
         ]
     ].copy()
@@ -199,7 +196,7 @@ def build_dataset():
     df_final["dias_inatividade"] = (hoje - df_final["dtAlteracao"]).dt.days
 
     df_final["ticket_total"] = (
-        df_final[["ticket Servico", "ticket Recorrencia", "ticket Produtos"]]
+        df_final[["ticket Total"]]
         .fillna(0)
         .sum(axis=1)
     )
@@ -571,10 +568,6 @@ with tab5:
             "cDescFase",
             "dtAlteracao",
             "dias_inatividade",
-            "ticket Servico",
-            "ticket Recorrencia",
-            "ticket Produtos",
-            "ticket Meses",
             "ticket_total",
             "cDesOp",
         ],
